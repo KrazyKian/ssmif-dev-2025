@@ -1,0 +1,54 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2
+      - shared-token:/shared
+    networks:
+      - app-network
+    env_file:
+      - .env
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - influxdb
+    volumes:
+      - shared-token:/shared  # Ensure backend can access the token
+      - ./backend:/app  # Sync local backend directory to container
+      - /app/__pycache__/  # Prevents caching Python bytecode inside the container
+    env_file:
+      - .env
+    networks:
+      - app-network
+
+  frontend:
+      build:
+        context: ./frontend  # This tells Docker to use frontend/Dockerfile
+      container_name: frontend
+      ports:
+        - "3000:3000"  # React frontend runs on port 3000
+      volumes:
+        - ./frontend:/app  # Sync frontend folder to container
+        - /app/node_modules
+      depends_on:
+        - backend
+      networks:
+        - app-network
+
+
+volumes:
+  influxdb-storage:
+  shared-token:
+
+networks:
+  app-network:
+    name: ssmif-dev_app-network
+    driver: bridge
+

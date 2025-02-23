@@ -1,0 +1,8 @@
+fastapi
+apscheduler
+pandas
+yfinance
+uvicorn
+influxdb-client
+aiohttp
+aiocsv
