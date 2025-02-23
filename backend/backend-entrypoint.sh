@@ -75,5 +75,3 @@ echo "✅ Using INFLUX_TOKEN: $INFLUXDB_TOKEN"
 # Start the FastAPI backend
 echo "🚀 Starting FastAPI backend..."
 exec uvicorn mains:app --host 0.0.0.0 --port 8000 --log-level debug
-
-

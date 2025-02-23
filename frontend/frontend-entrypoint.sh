@@ -1,6 +1,4 @@
 #!/bin/sh
-TOKEN_FILE="/shared/influx_token.txt"
-#!/bin/sh
 echo "⏳ Waiting for backend to load database with data from yahoo finance. This may take a while (especially on the first run)"
 
 while true; do
