@@ -31,8 +31,10 @@ holdings = pd.read_csv("holdings.csv")
 holdings["Date"] = pd.to_datetime(holdings["Date"]).dt.strftime("%Y-%m-%d")
 
 
+
 # Cache sector data to avoid repeated API calls
 sector_cache = {}
+
 
 def float_to_percents(value):
     return f"{value*100:.2f}%" if not np.isnan(value) else "N/A"
@@ -56,12 +58,14 @@ def monthly_portfolio_holding_values(stock_prices, holdings: pd.DataFrame):
     portfolio_series = [{"date": date, "value": round(value, 2)} for date, value in sorted(portfolio_values.items())]
     return portfolio_series
 
+
 @app.on_event("startup")
 async def startup_event():
     """Run stock data ingestion on startup and schedule repeated execution."""
     logger.info("🚀 Running stock data ingestion on startup...")
     db.update_stock_data(holdings["Symbol"].unique().tolist())  # Fetch stock data on app start
-    
+    for ticker in holdings['Symbol'].unique():
+        sector_cache[ticker] = db.get_stock_sector(ticker)
     # Schedule job to run every minute for testing
     scheduler.add_job(
         functools.partial(db.update_stock_data, holdings["Symbol"].unique().tolist()), 
@@ -72,7 +76,6 @@ async def startup_event():
     if not scheduler.running:
         scheduler.start()
         logger.info("📅 Scheduled stock update job: Runs at 4:15pm.")
-
 
 @app.get("/portfolio_value")
 async def get_portfolio_value():
@@ -165,44 +168,44 @@ async def get_portfolio_performance():
 
 @app.get("/sector_breakdown")
 async def get_sector_breakdown():
-        # Load holdings data
-        stock_prices = db.get_monthly_stock_prices()
+    # Load holdings data
+    stock_prices = db.get_monthly_stock_prices()
 
-        sector_breakdown = {}
+    sector_breakdown = {}
 
-        # Compute sector-wise distribution over time
-        previous_holdings = {}
-        for date, trade_data in holdings.groupby("Date"):
-            shares_dict = dict(zip(trade_data["Symbol"], trade_data["Shares"]))
-            # print("shares_dict: ", shares_dict)
-            sector_values = {}
-            for index, row in trade_data.iterrows():
-                ticker = row["Symbol"]
-                shares = row["Shares"]
-                price = stock_prices.get(date, {}).get(ticker, None)
-                if price is None:
-                    # print(f"Skipping missing price for {ticker}")
-                    continue  # Skip if price is missing
+    # Compute sector-wise distribution over time
+    previous_holdings = {}
+    for date, trade_data in holdings.groupby("Date"):
+        shares_dict = dict(zip(trade_data["Symbol"], trade_data["Shares"]))
+        # print("shares_dict: ", shares_dict)
+        sector_values = {}
+        for index, row in trade_data.iterrows():
+            ticker = row["Symbol"]
+            shares = row["Shares"]
+            price = stock_prices.get(date, {}).get(ticker, None)
+            if price is None:
+                # print(f"Skipping missing price for {ticker}")
+                continue  # Skip if price is missing
 
-                if ticker not in sector_cache:
-                    sector_cache[ticker] = db.get_stock_sector(ticker)
-            
-                sector = sector_cache[ticker]
-                if sector == "Unknown":
-                    # print(f"Skipping unknown sector for {ticker}")
-                    continue
+            if ticker not in sector_cache:
+                sector_cache[ticker] = db.get_stock_sector(ticker)
+        
+            sector = sector_cache[ticker]
+            if sector == "Unknown":
+                # print(f"Skipping unknown sector for {ticker}")
+                continue
 
-                sector_values[sector] = sector_values.get(sector, 0) + shares * price
-            # print("sector values: ", sector_values)
-            normalized_values = {sector: value / sum(sector_values.values()) for sector, value in sector_values.items()}
-            # print("normalized values: ", normalized_values)
-            sector_breakdown[date] = normalized_values
+            sector_values[sector] = sector_values.get(sector, 0) + shares * price
+        # print("sector values: ", sector_values)
+        normalized_values = {sector: value / sum(sector_values.values()) for sector, value in sector_values.items()}
+        # print("normalized values: ", normalized_values)
+        sector_breakdown[date] = normalized_values
 
-        breakdown_series = [
-            {"date": date, "sectors": sector_breakdown[date]} for date in sorted(sector_breakdown.keys())
-        ]
+    breakdown_series = [
+        {"date": date, "sectors": sector_breakdown[date]} for date in sorted(sector_breakdown.keys())
+    ]
 
-        return breakdown_series
+    return breakdown_series
 
 @app.get("/holdings")
 async def get_current_holdings():

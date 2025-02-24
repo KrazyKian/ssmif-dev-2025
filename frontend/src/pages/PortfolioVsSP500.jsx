@@ -29,7 +29,18 @@ const PortfolioVsSP500 = () => {
   }, []);
 
   if (loading) {
-    return <h2>Loading performance data...</h2>;
+    return (
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "80vh",
+          width: "100%",
+          textAlign: "center",
+        }}>
+          <h2>Loading portfolio data...</h2>
+        </div>
+      );
   }
 
   return (

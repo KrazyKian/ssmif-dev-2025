@@ -1,6 +1,5 @@
 from collections import defaultdict
 import warnings
-from fastapi import requests
 from requests.adapters import HTTPAdapter
 import pandas as pd
 from urllib3 import Retry

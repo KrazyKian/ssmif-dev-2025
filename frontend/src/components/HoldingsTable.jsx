@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000";
 
 const HoldingsTable = () => {
   const [holdings, setHoldings] = useState([]);
@@ -21,7 +21,18 @@ const HoldingsTable = () => {
   }, []);
 
   if (loading) {
-    return <h2>Loading holdings data...</h2>;
+    return (
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "80vh",
+          width: "100%",
+          textAlign: "center",
+        }}>
+          <h2>Loading portfolio data...</h2>
+        </div>
+      );
   }
 
   return (
